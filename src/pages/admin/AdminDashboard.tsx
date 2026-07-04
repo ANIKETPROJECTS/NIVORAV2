@@ -6,22 +6,88 @@ import {
 } from '../../lib/api'
 import AdminProjectForm from './AdminProjectForm'
 import AdminSiteSettings, { SettingsSection } from './AdminSiteSettings'
-import { Plus, Pencil, Trash2, LogOut, RefreshCw, ExternalLink, Loader2, LayoutTemplate, Image, AlignLeft, Grid2X2, Layers } from 'lucide-react'
+import {
+  Plus, Pencil, Trash2, LogOut, RefreshCw, ExternalLink, Loader2,
+  LayoutTemplate, Image, AlignLeft, Grid2X2, Layers, Home, Briefcase,
+  ChevronDown, ChevronRight, Sparkles, Columns, FileImage, List,
+} from 'lucide-react'
 
 type ProjectSummary = Pick<Project, 'id' | 'name' | 'location' | 'category' | 'year' | 'badge' | 'concept' | 'coverImage'>
 
 type AdminTab = 'projects' | `settings/${SettingsSection}`
 
-const SETTINGS_SECTIONS: { section: SettingsSection; label: string; icon: React.ElementType; hint: string }[] = [
-  { section: 'header',    label: 'Header',             icon: AlignLeft,     hint: 'Navbar logo & branding' },
-  { section: 'footer',    label: 'Footer',             icon: LayoutTemplate, hint: 'Footer logo' },
-  { section: 'expertise', label: 'Our Expertise',      icon: Grid2X2,       hint: 'Homepage service cards' },
-  { section: 'portfolio', label: 'Portfolio Highlights', icon: Layers,       hint: 'Homepage curated items' },
+// ── Sidebar page/section definition ──────────────────────────────────────────
+
+interface SidebarItem {
+  tab: AdminTab
+  label: string
+  icon: React.ElementType
+  hint?: string
+}
+
+interface SidebarPage {
+  id: string
+  label: string
+  icon: React.ElementType
+  items: SidebarItem[]
+}
+
+const SIDEBAR_PAGES: SidebarPage[] = [
+  {
+    id: 'home',
+    label: 'Home Page',
+    icon: Home,
+    items: [
+      { tab: 'settings/header',     label: 'Header',               icon: AlignLeft,     hint: 'Navbar logo' },
+      { tab: 'settings/hero',       label: 'Hero Section',         icon: Sparkles,      hint: 'Full-screen hero banner' },
+      { tab: 'settings/expertise',  label: 'Our Expertise',        icon: Grid2X2,       hint: 'Service cards section' },
+      { tab: 'settings/highlights', label: 'Portfolio Highlights', icon: Layers,        hint: 'Curated portfolio items' },
+      { tab: 'settings/footer',     label: 'Footer',               icon: LayoutTemplate,hint: 'Footer logo' },
+    ],
+  },
+  {
+    id: 'portfolio',
+    label: 'Portfolio Page',
+    icon: Image,
+    items: [
+      { tab: 'projects', label: 'Portfolio Projects', icon: Columns, hint: 'Manage all portfolio projects' },
+    ],
+  },
+  {
+    id: 'service',
+    label: 'Service Page',
+    icon: Briefcase,
+    items: [
+      { tab: 'settings/service-hero', label: 'Page Hero',  icon: FileImage, hint: 'Banner at top of services page' },
+      { tab: 'settings/services',     label: 'Services',   icon: List,      hint: 'Individual service listings' },
+    ],
+  },
 ]
+
+// Which page owns a given tab?
+function ownerPageId(tab: AdminTab): string {
+  for (const page of SIDEBAR_PAGES) {
+    if (page.items.some(i => i.tab === tab)) return page.id
+  }
+  return 'home'
+}
+
+// Human-readable tab label
+function tabLabel(tab: AdminTab): string {
+  for (const page of SIDEBAR_PAGES) {
+    const item = page.items.find(i => i.tab === tab)
+    if (item) return item.label
+  }
+  return 'Admin'
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const [tab, setTab] = useState<AdminTab>('projects')
+  const [openPages, setOpenPages] = useState<Set<string>>(new Set(['portfolio']))
+
   const [projects, setProjects] = useState<ProjectSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -31,75 +97,54 @@ export default function AdminDashboard() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState('')
 
-  const flash = (msg: string) => {
-    setSuccessMsg(msg)
-    setTimeout(() => setSuccessMsg(''), 3000)
-  }
+  const flash = (msg: string) => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 3000) }
 
   const load = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const data = await fetchProjects()
-      setProjects(data)
-    } catch (e: unknown) {
-      setError((e as Error).message)
-    } finally {
-      setLoading(false)
-    }
+    setLoading(true); setError('')
+    try { setProjects(await fetchProjects()) }
+    catch (e: unknown) { setError((e as Error).message) }
+    finally { setLoading(false) }
   }
 
   useEffect(() => { load() }, [])
 
-  const handleLogout = () => {
-    clearAdminToken()
-    navigate('/adminpannel')
-  }
+  const handleLogout = () => { clearAdminToken(); navigate('/adminpannel') }
 
   const handleAdd = async (data: Partial<Project>) => {
-    await createProject(data)
-    await load()
-    setShowForm(false)
-    flash('Project created successfully.')
+    await createProject(data); await load(); setShowForm(false); flash('Project created successfully.')
   }
-
   const handleEditOpen = async (id: string) => {
-    try {
-      const full = await fetchProject(id)
-      setEditingProject(full)
-    } catch (e: unknown) {
-      setError((e as Error).message)
-    }
+    try { setEditingProject(await fetchProject(id)) }
+    catch (e: unknown) { setError((e as Error).message) }
   }
-
   const handleUpdate = async (data: Partial<Project>) => {
     if (!editingProject?.id) return
-    await updateProject(editingProject.id, data)
-    await load()
-    setEditingProject(null)
-    flash('Project updated successfully.')
+    await updateProject(editingProject.id, data); await load(); setEditingProject(null); flash('Project updated successfully.')
   }
-
   const handleDelete = async (id: string) => {
     setDeletingId(id)
-    try {
-      await deleteProject(id)
-      await load()
-      flash('Project deleted.')
-    } catch (e: unknown) {
-      setError((e as Error).message)
-    } finally {
-      setDeletingId(null)
-      setConfirmDelete(null)
-    }
+    try { await deleteProject(id); await load(); flash('Project deleted.') }
+    catch (e: unknown) { setError((e as Error).message) }
+    finally { setDeletingId(null); setConfirmDelete(null) }
   }
 
-  const isSettings = tab.startsWith('settings/')
-  const activeSection = isSettings ? (tab.replace('settings/', '') as SettingsSection) : null
+  const navigate2 = (newTab: AdminTab) => {
+    setTab(newTab)
+    // Auto-open the parent page when a subsection is selected
+    setOpenPages(prev => new Set([...prev, ownerPageId(newTab)]))
+  }
 
-  const topbarTitle = tab === 'projects'
-    ? 'Portfolio Projects'
-    : SETTINGS_SECTIONS.find(s => s.section === activeSection)?.label ?? 'Site Settings'
+  const togglePage = (pageId: string) => {
+    setOpenPages(prev => {
+      const next = new Set(prev)
+      if (next.has(pageId)) next.delete(pageId)
+      else next.add(pageId)
+      return next
+    })
+  }
+
+  const isSettingsTab = tab.startsWith('settings/')
+  const activeSection = isSettingsTab ? (tab.replace('settings/', '') as SettingsSection) : null
 
   return (
     <div className="adm-root">
@@ -110,32 +155,49 @@ export default function AdminDashboard() {
           <span className="adm-brand-sub">admin</span>
         </div>
 
-        <nav className="adm-nav" style={{ overflowY: 'auto', flex: 1 }}>
+        <nav className="adm-nav">
+          <div className="adm-nav-group-label">Pages</div>
 
-          {/* ── Content group ── */}
-          <div className="adm-nav-group-label">Content</div>
-          <div
-            className={`adm-nav-item ${tab === 'projects' ? 'adm-nav-active' : ''}`}
-            onClick={() => setTab('projects')}
-          >
-            <Image size={13} style={{ flexShrink: 0 }} />
-            Portfolio Projects
-          </div>
+          {SIDEBAR_PAGES.map(page => {
+            const isOpen = openPages.has(page.id)
+            const PageIcon = page.icon
+            const Chevron = isOpen ? ChevronDown : ChevronRight
+            const pageActive = page.items.some(i => i.tab === tab)
 
-          {/* ── Site Settings group ── */}
-          <div className="adm-nav-group-label" style={{ marginTop: 16 }}>Site Settings</div>
+            return (
+              <div key={page.id}>
+                {/* Page header row */}
+                <div
+                  className={`adm-page-row ${pageActive ? 'adm-page-row-active' : ''}`}
+                  onClick={() => togglePage(page.id)}
+                >
+                  <PageIcon size={13} style={{ flexShrink: 0 }} />
+                  <span style={{ flex: 1 }}>{page.label}</span>
+                  <Chevron size={11} style={{ flexShrink: 0, opacity: 0.5 }} />
+                </div>
 
-          {SETTINGS_SECTIONS.map(({ section, label, icon: Icon }) => (
-            <div
-              key={section}
-              className={`adm-nav-item ${tab === `settings/${section}` ? 'adm-nav-active' : ''}`}
-              onClick={() => setTab(`settings/${section}` as AdminTab)}
-              title={SETTINGS_SECTIONS.find(s => s.section === section)?.hint}
-            >
-              <Icon size={13} style={{ flexShrink: 0 }} />
-              {label}
-            </div>
-          ))}
+                {/* Sub-items */}
+                {isOpen && (
+                  <div className="adm-sub-items">
+                    {page.items.map(item => {
+                      const ItemIcon = item.icon
+                      return (
+                        <div
+                          key={item.tab}
+                          className={`adm-nav-item adm-nav-sub ${tab === item.tab ? 'adm-nav-active' : ''}`}
+                          onClick={() => navigate2(item.tab)}
+                          title={item.hint}
+                        >
+                          <ItemIcon size={12} style={{ flexShrink: 0, opacity: 0.75 }} />
+                          {item.label}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </nav>
 
         <div className="adm-sidebar-footer">
@@ -150,24 +212,15 @@ export default function AdminDashboard() {
         {/* Topbar */}
         <header className="adm-topbar">
           <div className="adm-topbar-left">
-            <h1 className="adm-page-title">{topbarTitle}</h1>
+            <h1 className="adm-page-title">{tabLabel(tab)}</h1>
             {tab === 'projects' && (
-              <span className="adm-count">
-                {projects.length} {projects.length === 1 ? 'project' : 'projects'}
-              </span>
-            )}
-            {isSettings && activeSection && (
-              <span className="adm-count">
-                {SETTINGS_SECTIONS.find(s => s.section === activeSection)?.hint}
-              </span>
+              <span className="adm-count">{projects.length} {projects.length === 1 ? 'project' : 'projects'}</span>
             )}
           </div>
           <div className="adm-topbar-right">
             {tab === 'projects' ? (
               <>
-                <button className="adm-btn-ghost-sm" onClick={load} title="Refresh">
-                  <RefreshCw size={15} />
-                </button>
+                <button className="adm-btn-ghost-sm" onClick={load} title="Refresh"><RefreshCw size={15} /></button>
                 <a href="/portfolio" target="_blank" rel="noreferrer" className="adm-btn-ghost-sm" title="View portfolio">
                   <ExternalLink size={15} />
                 </a>
@@ -183,7 +236,7 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        {/* Messages (projects tab only) */}
+        {/* Messages */}
         {tab === 'projects' && successMsg && <div className="adm-success">{successMsg}</div>}
         {tab === 'projects' && error && (
           <div className="adm-error">
@@ -194,7 +247,7 @@ export default function AdminDashboard() {
 
         {/* Content */}
         <div className="adm-content">
-          {isSettings && activeSection ? (
+          {isSettingsTab && activeSection ? (
             <AdminSiteSettings section={activeSection} />
           ) : loading ? (
             <div className="adm-loading">
@@ -212,12 +265,8 @@ export default function AdminDashboard() {
               <table className="adm-table">
                 <thead>
                   <tr>
-                    <th>Cover</th>
-                    <th>Name</th>
-                    <th>Location</th>
-                    <th>Category</th>
-                    <th>Year</th>
-                    <th>Badge</th>
+                    <th>Cover</th><th>Name</th><th>Location</th>
+                    <th>Category</th><th>Year</th><th>Badge</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
@@ -234,9 +283,7 @@ export default function AdminDashboard() {
                         <div className="adm-slug">{p.id}</div>
                       </td>
                       <td className="adm-cell-muted">{p.location || '—'}</td>
-                      <td>
-                        <span className={`adm-badge adm-badge-${p.category}`}>{p.category}</span>
-                      </td>
+                      <td><span className={`adm-badge adm-badge-${p.category}`}>{p.category}</span></td>
                       <td className="adm-cell-muted">{p.year || '—'}</td>
                       <td className="adm-cell-muted">{p.badge || '—'}</td>
                       <td>
@@ -247,21 +294,13 @@ export default function AdminDashboard() {
                           {confirmDelete === p.id ? (
                             <div className="adm-confirm">
                               <span>Delete?</span>
-                              <button
-                                className="adm-confirm-yes"
-                                onClick={() => handleDelete(p.id)}
-                                disabled={deletingId === p.id}
-                              >
+                              <button className="adm-confirm-yes" onClick={() => handleDelete(p.id)} disabled={deletingId === p.id}>
                                 {deletingId === p.id ? <Loader2 size={12} className="adm-spin" /> : 'Yes'}
                               </button>
                               <button className="adm-confirm-no" onClick={() => setConfirmDelete(null)}>No</button>
                             </div>
                           ) : (
-                            <button
-                              className="adm-action-btn adm-action-del"
-                              onClick={() => setConfirmDelete(p.id)}
-                              title="Delete"
-                            >
+                            <button className="adm-action-btn adm-action-del" onClick={() => setConfirmDelete(p.id)} title="Delete">
                               <Trash2 size={14} />
                             </button>
                           )}
@@ -277,18 +316,11 @@ export default function AdminDashboard() {
       </main>
 
       {/* Add Form */}
-      {showForm && (
-        <AdminProjectForm onSave={handleAdd} onCancel={() => setShowForm(false)} />
-      )}
+      {showForm && <AdminProjectForm onSave={handleAdd} onCancel={() => setShowForm(false)} />}
 
       {/* Edit Form */}
       {editingProject && (
-        <AdminProjectForm
-          initial={editingProject}
-          onSave={handleUpdate}
-          onCancel={() => setEditingProject(null)}
-          isEdit
-        />
+        <AdminProjectForm initial={editingProject} onSave={handleUpdate} onCancel={() => setEditingProject(null)} isEdit />
       )}
 
       <style>{`
@@ -318,23 +350,36 @@ export default function AdminDashboard() {
           font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase;
           color: #c0b5a8; font-weight: 600; user-select: none;
         }
+        /* Page header row */
+        .adm-page-row {
+          padding: 10px 20px 10px 24px; font-size: 13px; color: #6b5d4f;
+          cursor: pointer; transition: all 0.15s;
+          display: flex; align-items: center; gap: 8px;
+          font-weight: 500; user-select: none;
+          border-left: 2px solid transparent;
+        }
+        .adm-page-row:hover { background: rgba(122,98,69,0.04); color: #3d2e1e; }
+        .adm-page-row-active { color: #7a6245; }
+        /* Sub-items container */
+        .adm-sub-items { background: #faf8f5; border-bottom: 1px solid #f0ebe3; }
+        /* Nav items (sub-level) */
         .adm-nav-item {
-          padding: 9px 24px; font-size: 13px; color: #9a8e82;
+          padding: 8px 20px; font-size: 12.5px; color: #9a8e82;
           cursor: pointer; transition: all 0.15s;
           border-left: 2px solid transparent;
           display: flex; align-items: center; gap: 8px;
         }
-        .adm-nav-item:hover { color: #5a4730; background: rgba(122,98,69,0.04); }
+        .adm-nav-sub { padding-left: 36px; }
+        .adm-nav-item:hover { color: #5a4730; background: rgba(122,98,69,0.05); }
         .adm-nav-active {
           color: #7a6245; border-left-color: #7a6245;
-          background: rgba(122,98,69,0.07); font-weight: 500;
+          background: rgba(122,98,69,0.08); font-weight: 500;
         }
         .adm-sidebar-footer { padding: 20px 24px; border-top: 1px solid #ede8e1; }
         .adm-logout {
           display: flex; align-items: center; gap: 8px;
           background: none; border: none; color: #9a8e82;
-          cursor: pointer; font-size: 13px; padding: 0;
-          transition: color 0.2s;
+          cursor: pointer; font-size: 13px; padding: 0; transition: color 0.2s;
         }
         .adm-logout:hover { color: #b85a4a; }
         .adm-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }

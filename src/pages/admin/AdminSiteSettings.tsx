@@ -1,28 +1,27 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react'
 import {
   fetchSiteSettings, updateSiteSettings, uploadSiteImage,
-  SiteSettings, ServiceCard, HomePortfolioItem,
+  SiteSettings, ServiceCard, HomePortfolioItem, HomeHero, ServicePageHero, ServiceItem,
 } from '../../lib/api'
 import { invalidateSiteSettings } from '../../hooks/useSiteSettings'
-import { Upload, Loader2, Save } from 'lucide-react'
+import { Upload, Loader2, Save, Plus, Trash2 } from 'lucide-react'
 
-export type SettingsSection = 'header' | 'footer' | 'expertise' | 'portfolio'
+export type SettingsSection =
+  | 'header'        // Home Page → Header (navbar logo)
+  | 'hero'          // Home Page → Hero Section
+  | 'expertise'     // Home Page → Our Expertise
+  | 'highlights'    // Home Page → Portfolio Highlights
+  | 'footer'        // Home Page → Footer logo
+  | 'service-hero'  // Service Page → Page Hero
+  | 'services'      // Service Page → Services list
 
 const GOLD = '#7a6245'
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
 
 function ImageUploadField({
-  label,
-  hint,
-  currentUrl,
-  onUploaded,
-}: {
-  label: string
-  hint?: string
-  currentUrl: string
-  onUploaded: (url: string) => void
-}) {
+  label, hint, currentUrl, onUploaded,
+}: { label: string; hint?: string; currentUrl: string; onUploaded: (url: string) => void }) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const ref = useRef<HTMLInputElement>(null)
@@ -49,36 +48,24 @@ function ImageUploadField({
       {hint && <p style={{ fontSize: 12, color: '#b0a498', margin: '0 0 10px' }}>{hint}</p>}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
         {currentUrl ? (
-          <img
-            src={currentUrl}
-            alt={label}
-            style={{
-              height: 64, width: 'auto', maxWidth: 200, objectFit: 'contain',
-              borderRadius: 6, border: '1px solid #e2d9ce', background: '#f5f0e8', padding: 6,
-            }}
-          />
+          <img src={currentUrl} alt={label} style={{
+            height: 64, width: 'auto', maxWidth: 200, objectFit: 'contain',
+            borderRadius: 6, border: '1px solid #e2d9ce', background: '#f5f0e8', padding: 6,
+          }} />
         ) : (
           <div style={{
             height: 64, width: 140, borderRadius: 6, border: '2px dashed #e2d9ce',
             background: '#faf8f5', display: 'flex', alignItems: 'center',
             justifyContent: 'center', color: '#c0b5a8', fontSize: 11,
-          }}>
-            No image
-          </div>
+          }}>No image</div>
         )}
         <div>
           <input ref={ref} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleChange} />
           <button onClick={() => ref.current?.click()} disabled={uploading} style={uploadBtnStyle}>
-            {uploading
-              ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
-              : <Upload size={13} />}
+            {uploading ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <Upload size={13} />}
             {uploading ? 'Uploading…' : currentUrl ? 'Replace Image' : 'Upload Image'}
           </button>
-          {currentUrl && (
-            <p style={{ fontSize: 11, color: '#c0b5a8', marginTop: 5 }}>
-              Served from Cloudinary CDN
-            </p>
-          )}
+          {currentUrl && <p style={{ fontSize: 11, color: '#c0b5a8', marginTop: 5 }}>Served from Cloudinary CDN</p>}
         </div>
       </div>
       {error && <p style={{ color: '#b85a4a', fontSize: 12, marginTop: 6 }}>{error}</p>}
@@ -95,38 +82,31 @@ function FieldRow({ children }: { children: React.ReactNode }) {
 }
 
 function TextField({
-  label, value, onChange, multiline,
-}: { label: string; value: string; onChange: (v: string) => void; multiline?: boolean }) {
+  label, value, onChange, multiline, placeholder,
+}: { label: string; value: string; onChange: (v: string) => void; multiline?: boolean; placeholder?: string }) {
   return (
     <div>
       <label style={labelStyle}>{label}</label>
       {multiline ? (
         <textarea
-          style={{ ...inputStyle, height: 64, resize: 'vertical' }}
+          style={{ ...inputStyle, height: 72, resize: 'vertical' }}
           value={value}
+          placeholder={placeholder}
           onChange={e => onChange(e.target.value)}
         />
       ) : (
-        <input style={inputStyle} value={value} onChange={e => onChange(e.target.value)} />
+        <input style={inputStyle} value={value} placeholder={placeholder} onChange={e => onChange(e.target.value)} />
       )}
     </div>
   )
 }
 
-function SaveBar({
-  saving, onSave, success, error, onClearError,
-}: {
-  saving: boolean
-  onSave: () => void
-  success: string
-  error: string
-  onClearError: () => void
+function SaveBar({ saving, onSave, success, error, onClearError }: {
+  saving: boolean; onSave: () => void; success: string; error: string; onClearError: () => void
 }) {
   return (
     <div style={{ paddingTop: 8, paddingBottom: 48 }}>
-      {success && (
-        <div style={successStyle}>{success}</div>
-      )}
+      {success && <div style={successStyle}>{success}</div>}
       {error && (
         <div style={errorStyle}>
           {error}
@@ -141,23 +121,19 @@ function SaveBar({
         textTransform: 'uppercase', opacity: saving ? 0.7 : 1,
         marginTop: success || error ? 12 : 0,
       }}>
-        {saving
-          ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-          : <Save size={14} />}
+        {saving ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={14} />}
         {saving ? 'Saving…' : 'Save Changes'}
       </button>
     </div>
   )
 }
 
-// ── Section panels ────────────────────────────────────────────────────────────
+// ── Section Panels ────────────────────────────────────────────────────────────
 
 function HeaderPanel({ settings, onChange }: { settings: SiteSettings; onChange: (s: SiteSettings) => void }) {
   return (
     <div>
-      <p style={descStyle}>
-        The logo shown in the top navigation bar across the entire website.
-      </p>
+      <p style={descStyle}>The logo shown in the top navigation bar across the entire website.</p>
       <ImageUploadField
         label="Navbar Logo"
         hint="Displayed at 38px height. Works best as a wide PNG with transparent background."
@@ -171,15 +147,51 @@ function HeaderPanel({ settings, onChange }: { settings: SiteSettings; onChange:
 function FooterPanel({ settings, onChange }: { settings: SiteSettings; onChange: (s: SiteSettings) => void }) {
   return (
     <div>
-      <p style={descStyle}>
-        The logo shown in the footer. A version with a light/transparent background works best on the dark footer.
-      </p>
+      <p style={descStyle}>The logo shown in the footer. A version with a light/transparent background works best on the dark footer.</p>
       <ImageUploadField
         label="Footer Logo"
-        hint="Displayed at 200px wide. Background is auto-removed on display."
+        hint="Displayed at 200px wide."
         currentUrl={settings.footerLogoUrl}
         onUploaded={url => onChange({ ...settings, footerLogoUrl: url })}
       />
+    </div>
+  )
+}
+
+function HeroPanel({ settings, onChange }: { settings: SiteSettings; onChange: (s: SiteSettings) => void }) {
+  const hero: HomeHero = settings.homeHero ?? { backgroundImage: '', headline: '', subheadline: '', ctaText: '', ctaLink: '' }
+  const update = (patch: Partial<HomeHero>) => onChange({ ...settings, homeHero: { ...hero, ...patch } })
+
+  return (
+    <div>
+      <p style={descStyle}>The full-screen hero shown at the top of the home page — background image, headline, subheadline, and call-to-action button.</p>
+      <ImageUploadField
+        label="Background Image"
+        hint="Full-width image behind the hero text. Use a high-resolution landscape photo."
+        currentUrl={hero.backgroundImage}
+        onUploaded={url => update({ backgroundImage: url })}
+      />
+      <div style={{ marginBottom: 12 }}>
+        <TextField
+          label="Headline"
+          value={hero.headline}
+          placeholder="e.g. Thoughtful Spaces, Timeless Design"
+          onChange={v => update({ headline: v })}
+        />
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        <TextField
+          label="Subheadline"
+          value={hero.subheadline}
+          placeholder="e.g. Interior design that transforms the way you live."
+          onChange={v => update({ subheadline: v })}
+          multiline
+        />
+      </div>
+      <FieldRow>
+        <TextField label="CTA Button Text" value={hero.ctaText} placeholder="e.g. Explore Our Work" onChange={v => update({ ctaText: v })} />
+        <TextField label="CTA Button Link" value={hero.ctaLink} placeholder="e.g. /portfolio" onChange={v => update({ ctaLink: v })} />
+      </FieldRow>
     </div>
   )
 }
@@ -194,16 +206,12 @@ function ExpertisePanel({ settings, onChange }: { settings: SiteSettings; onChan
   return (
     <div>
       <p style={descStyle}>
-        The 4 cards in the <strong>"Spaces Designed for Every Lifestyle"</strong> section on the homepage. Each card has an image, title, and description.
+        The cards in the <strong>"Spaces Designed for Every Lifestyle"</strong> section on the homepage. Each card has an image, title, and description.
       </p>
       {settings.serviceCards.map((card, i) => (
         <div key={i} style={cardBoxStyle}>
           <p style={cardIndexStyle}>Card {i + 1}</p>
-          <ImageUploadField
-            label="Image"
-            currentUrl={card.img}
-            onUploaded={url => update(i, { ...card, img: url })}
-          />
+          <ImageUploadField label="Image" currentUrl={card.img} onUploaded={url => update(i, { ...card, img: url })} />
           <TextField label="Title" value={card.title} onChange={v => update(i, { ...card, title: v })} />
           <div style={{ marginTop: 10 }}>
             <TextField label="Description" value={card.desc} onChange={v => update(i, { ...card, desc: v })} multiline />
@@ -214,7 +222,7 @@ function ExpertisePanel({ settings, onChange }: { settings: SiteSettings; onChan
   )
 }
 
-function PortfolioPanel({ settings, onChange }: { settings: SiteSettings; onChange: (s: SiteSettings) => void }) {
+function HighlightsPanel({ settings, onChange }: { settings: SiteSettings; onChange: (s: SiteSettings) => void }) {
   const update = (i: number, item: HomePortfolioItem) => {
     const items = [...settings.homePortfolio]
     items[i] = item
@@ -224,16 +232,12 @@ function PortfolioPanel({ settings, onChange }: { settings: SiteSettings; onChan
   return (
     <div>
       <p style={descStyle}>
-        6 curated portfolio highlights managed separately from the portfolio database. Edit image, name, location, category, and description for each.
+        Curated portfolio highlights shown on the homepage. Edit image, name, location, category, and description for each.
       </p>
       {settings.homePortfolio.map((item, i) => (
         <div key={i} style={cardBoxStyle}>
           <p style={cardIndexStyle}>Item {i + 1} — {item.name || '(unnamed)'}</p>
-          <ImageUploadField
-            label="Image"
-            currentUrl={item.img}
-            onUploaded={url => update(i, { ...item, img: url })}
-          />
+          <ImageUploadField label="Image" currentUrl={item.img} onUploaded={url => update(i, { ...item, img: url })} />
           <FieldRow>
             <TextField label="Name" value={item.name} onChange={v => update(i, { ...item, name: v })} />
             <TextField label="Location" value={item.location} onChange={v => update(i, { ...item, location: v })} />
@@ -249,10 +253,99 @@ function PortfolioPanel({ settings, onChange }: { settings: SiteSettings; onChan
   )
 }
 
+function ServiceHeroPanel({ settings, onChange }: { settings: SiteSettings; onChange: (s: SiteSettings) => void }) {
+  const hero: ServicePageHero = settings.servicePageHero ?? { backgroundImage: '', headline: '', subheadline: '' }
+  const update = (patch: Partial<ServicePageHero>) => onChange({ ...settings, servicePageHero: { ...hero, ...patch } })
+
+  return (
+    <div>
+      <p style={descStyle}>The banner at the top of the Services page — background image, headline, and subheadline.</p>
+      <ImageUploadField
+        label="Background Image"
+        hint="Full-width banner image for the services page header."
+        currentUrl={hero.backgroundImage}
+        onUploaded={url => update({ backgroundImage: url })}
+      />
+      <div style={{ marginBottom: 12 }}>
+        <TextField label="Headline" value={hero.headline} placeholder="e.g. Our Services" onChange={v => update({ headline: v })} />
+      </div>
+      <TextField
+        label="Subheadline"
+        value={hero.subheadline}
+        placeholder="e.g. Comprehensive interior design solutions tailored to your vision."
+        onChange={v => update({ subheadline: v })}
+        multiline
+      />
+    </div>
+  )
+}
+
+function ServicesPanel({ settings, onChange }: { settings: SiteSettings; onChange: (s: SiteSettings) => void }) {
+  const items: ServiceItem[] = settings.servicesList ?? []
+
+  const update = (i: number, item: ServiceItem) => {
+    const list = [...items]
+    list[i] = item
+    onChange({ ...settings, servicesList: list })
+  }
+
+  const addItem = () => {
+    onChange({ ...settings, servicesList: [...items, { img: '', title: '', desc: '' }] })
+  }
+
+  const removeItem = (i: number) => {
+    const list = items.filter((_, idx) => idx !== i)
+    onChange({ ...settings, servicesList: list })
+  }
+
+  return (
+    <div>
+      <p style={descStyle}>The individual services listed on the Services page. Each service has an image, title, and description.</p>
+
+      {items.map((item, i) => (
+        <div key={i} style={{ ...cardBoxStyle, position: 'relative' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <p style={{ ...cardIndexStyle, margin: 0 }}>Service {i + 1}</p>
+            <button
+              onClick={() => removeItem(i)}
+              style={{ background: 'none', border: '1px solid #e2d9ce', color: '#b85a4a', borderRadius: 4, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}
+            >
+              <Trash2 size={12} /> Remove
+            </button>
+          </div>
+          <ImageUploadField label="Image" currentUrl={item.img} onUploaded={url => update(i, { ...item, img: url })} />
+          <div style={{ marginBottom: 10 }}>
+            <TextField label="Title" value={item.title} placeholder="e.g. Residential Design" onChange={v => update(i, { ...item, title: v })} />
+          </div>
+          <TextField label="Description" value={item.desc} placeholder="e.g. Full-service interior design for homes and apartments." onChange={v => update(i, { ...item, desc: v })} multiline />
+        </div>
+      ))}
+
+      <button onClick={addItem} style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        background: 'none', border: `1px dashed ${GOLD}`, color: GOLD,
+        borderRadius: 6, padding: '10px 20px', fontSize: 13, cursor: 'pointer',
+        letterSpacing: '0.04em', marginBottom: 24,
+      }}>
+        <Plus size={14} /> Add Service
+      </button>
+    </div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface Props {
   section: SettingsSection
+}
+
+const EMPTY_SETTINGS: SiteSettings = {
+  logoUrl: '', footerLogoUrl: '',
+  homeHero: { backgroundImage: '', headline: '', subheadline: '', ctaText: '', ctaLink: '' },
+  serviceCards: [],
+  homePortfolio: [],
+  servicePageHero: { backgroundImage: '', headline: '', subheadline: '' },
+  servicesList: [],
 }
 
 export default function AdminSiteSettings({ section }: Props) {
@@ -266,21 +359,13 @@ export default function AdminSiteSettings({ section }: Props) {
     setLoading(true)
     fetchSiteSettings()
       .then(data => {
-        setSettings({
-          ...data,
-          serviceCards: data.serviceCards ?? [],
-          homePortfolio: data.homePortfolio ?? [],
-        })
+        setSettings({ ...EMPTY_SETTINGS, ...data })
         setLoading(false)
       })
       .catch(() => setLoading(false))
   }, [])
 
-  // Reset status messages when switching sections
-  useEffect(() => {
-    setSuccess('')
-    setError('')
-  }, [section])
+  useEffect(() => { setSuccess(''); setError('') }, [section])
 
   const save = async () => {
     if (!settings) return
@@ -289,8 +374,9 @@ export default function AdminSiteSettings({ section }: Props) {
     setSuccess('')
     try {
       const updated = await updateSiteSettings(settings)
-      invalidateSiteSettings({ ...updated, serviceCards: updated.serviceCards ?? [], homePortfolio: updated.homePortfolio ?? [] })
-      setSettings({ ...updated, serviceCards: updated.serviceCards ?? [], homePortfolio: updated.homePortfolio ?? [] })
+      const merged = { ...EMPTY_SETTINGS, ...updated }
+      invalidateSiteSettings(merged)
+      setSettings(merged)
       setSuccess('Changes saved successfully.')
       setTimeout(() => setSuccess(''), 4000)
     } catch (err: unknown) {
@@ -317,18 +403,15 @@ export default function AdminSiteSettings({ section }: Props) {
     <div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-      {section === 'header'    && <HeaderPanel    settings={settings} onChange={setSettings} />}
-      {section === 'footer'    && <FooterPanel    settings={settings} onChange={setSettings} />}
-      {section === 'expertise' && <ExpertisePanel settings={settings} onChange={setSettings} />}
-      {section === 'portfolio' && <PortfolioPanel settings={settings} onChange={setSettings} />}
+      {section === 'header'      && <HeaderPanel      settings={settings} onChange={setSettings} />}
+      {section === 'hero'        && <HeroPanel        settings={settings} onChange={setSettings} />}
+      {section === 'expertise'   && <ExpertisePanel   settings={settings} onChange={setSettings} />}
+      {section === 'highlights'  && <HighlightsPanel  settings={settings} onChange={setSettings} />}
+      {section === 'footer'      && <FooterPanel      settings={settings} onChange={setSettings} />}
+      {section === 'service-hero'&& <ServiceHeroPanel settings={settings} onChange={setSettings} />}
+      {section === 'services'    && <ServicesPanel    settings={settings} onChange={setSettings} />}
 
-      <SaveBar
-        saving={saving}
-        onSave={save}
-        success={success}
-        error={error}
-        onClearError={() => setError('')}
-      />
+      <SaveBar saving={saving} onSave={save} success={success} error={error} onClearError={() => setError('')} />
     </div>
   )
 }

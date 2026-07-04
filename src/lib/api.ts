@@ -42,11 +42,34 @@ export interface HomePortfolioItem {
   img: string
 }
 
+export interface HomeHero {
+  backgroundImage: string
+  headline: string
+  subheadline: string
+  ctaText: string
+  ctaLink: string
+}
+
+export interface ServicePageHero {
+  backgroundImage: string
+  headline: string
+  subheadline: string
+}
+
+export interface ServiceItem {
+  img: string
+  title: string
+  desc: string
+}
+
 export interface SiteSettings {
   logoUrl: string
   footerLogoUrl: string
+  homeHero: HomeHero
   serviceCards: ServiceCard[]
   homePortfolio: HomePortfolioItem[]
+  servicePageHero: ServicePageHero
+  servicesList: ServiceItem[]
 }
 
 const BASE = '/api'
