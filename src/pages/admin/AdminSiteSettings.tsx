@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react'
 import {
   fetchSiteSettings, updateSiteSettings, uploadSiteImage,
-  SiteSettings, ServiceCard, HomePortfolioItem, HomeHero, ServicePageHero, ServiceItem,
+  SiteSettings, ServiceCard, HomeHero, ServicePageHero, ServiceItem,
 } from '../../lib/api'
 import { invalidateSiteSettings } from '../../hooks/useSiteSettings'
 import { Upload, Loader2, Save, Plus, Trash2 } from 'lucide-react'
@@ -10,7 +10,6 @@ export type SettingsSection =
   | 'header'        // Home Page → Header (navbar logo)
   | 'hero'          // Home Page → Hero Section
   | 'expertise'     // Home Page → Our Expertise
-  | 'highlights'    // Home Page → Portfolio Highlights
   | 'footer'        // Home Page → Footer logo
   | 'services'      // Service Page → Services list
 
@@ -291,36 +290,6 @@ function ExpertisePanel({ settings, onChange }: { settings: SiteSettings; onChan
   )
 }
 
-function HighlightsPanel({ settings, onChange }: { settings: SiteSettings; onChange: (s: SiteSettings) => void }) {
-  const update = (i: number, item: HomePortfolioItem) => {
-    const items = [...settings.homePortfolio]
-    items[i] = item
-    onChange({ ...settings, homePortfolio: items })
-  }
-
-  return (
-    <div>
-      <p style={descStyle}>
-        Curated portfolio highlights shown on the homepage. Edit image, name, location, category, and description for each.
-      </p>
-      {settings.homePortfolio.map((item, i) => (
-        <div key={i} style={cardBoxStyle}>
-          <p style={cardIndexStyle}>Item {i + 1} — {item.name || '(unnamed)'}</p>
-          <ImageUploadField label="Image" currentUrl={item.img} onUploaded={url => update(i, { ...item, img: url })} />
-          <FieldRow>
-            <TextField label="Name" value={item.name} onChange={v => update(i, { ...item, name: v })} />
-            <TextField label="Location" value={item.location} onChange={v => update(i, { ...item, location: v })} />
-          </FieldRow>
-          <FieldRow>
-            <TextField label="Category" value={item.category} onChange={v => update(i, { ...item, category: v })} />
-            <TextField label="Service Link" value={item.serviceHref} onChange={v => update(i, { ...item, serviceHref: v })} />
-          </FieldRow>
-          <TextField label="Description" value={item.desc} onChange={v => update(i, { ...item, desc: v })} multiline />
-        </div>
-      ))}
-    </div>
-  )
-}
 
 
 function ServicesPanel({ settings, onChange }: { settings: SiteSettings; onChange: (s: SiteSettings) => void }) {
@@ -447,12 +416,11 @@ export default function AdminSiteSettings({ section }: Props) {
     <div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-      {section === 'header'     && <HeaderPanel     settings={settings} onChange={setSettings} />}
-      {section === 'hero'       && <HeroPanel       settings={settings} onChange={setSettings} />}
-      {section === 'expertise'  && <ExpertisePanel  settings={settings} onChange={setSettings} />}
-      {section === 'highlights' && <HighlightsPanel settings={settings} onChange={setSettings} />}
-      {section === 'footer'     && <FooterPanel     settings={settings} onChange={setSettings} />}
-      {section === 'services'   && <ServicesPanel   settings={settings} onChange={setSettings} />}
+      {section === 'header'    && <HeaderPanel    settings={settings} onChange={setSettings} />}
+      {section === 'hero'      && <HeroPanel      settings={settings} onChange={setSettings} />}
+      {section === 'expertise' && <ExpertisePanel settings={settings} onChange={setSettings} />}
+      {section === 'footer'    && <FooterPanel    settings={settings} onChange={setSettings} />}
+      {section === 'services'  && <ServicesPanel  settings={settings} onChange={setSettings} />}
 
       <SaveBar saving={saving} onSave={save} success={success} error={error} onClearError={() => setError('')} />
     </div>
