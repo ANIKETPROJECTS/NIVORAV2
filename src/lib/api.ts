@@ -103,14 +103,26 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json()
 }
 
-function adminRequest<T>(path: string, options?: RequestInit): Promise<T> {
+async function adminRequest<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getAdminToken() || ''
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'x-admin-token': token,
     ...(options?.headers as Record<string, string> | undefined),
   }
-  return request<T>(path, { ...options, headers })
+  const res = await fetch(`${BASE}${path}`, { ...options, headers })
+  if (res.status === 403) {
+    // Token was rejected — server likely restarted and issued a new token.
+    // Clear the stale token and redirect to login so the user can re-authenticate.
+    clearAdminToken()
+    window.location.href = '/adminpannel'
+    throw new Error('Session expired. Please log in again.')
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `Request failed: ${res.status}`)
+  }
+  return res.json()
 }
 
 // ── Admin login ───────────────────────────────────────────────────────────────
