@@ -1,11 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
-import imgCalista from '@assets/3_(1)_1781792140739.jpg'
-import imgNeelaya from '@assets/11_1781792153281.png'
-import imgSparsh from '@assets/6_(1)_1781792222998.jpg'
-import imgOffice from '@assets/16_1781792239759.jpg'
-import imgAurelia from '@assets/2_(2)_1781792402795.jpg'
-import imgUrban from '@assets/3_(2)_1781792428831.jpg'
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion'
+import { useSiteSettings } from '../hooks/useSiteSettings'
 import { ArrowRight, Home as HomeIcon, Building2, Coffee, Layers, Monitor, Gem, Wrench, Clock, Settings, Heart } from 'lucide-react'
 import FadeIn from '../components/FadeIn'
 import { useState, useRef, useEffect, useCallback } from 'react'
@@ -13,62 +8,6 @@ import { projects } from '../data/projects'
 
 const heroImg = 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1800&q=85'
 
-const portfolioProjects = [
-  {
-    id: 'calista-residence',
-    name: 'Royal Living Redefined',
-    location: 'Juhu, Mumbai',
-    category: 'Residential',
-    serviceHref: '/services/residential',
-    desc: 'A warm family home brought to life with marble surfaces, rich walnut joinery and considered lighting that shifts with the day.',
-    img: imgCalista,
-  },
-  {
-    id: 'neelaya-villa',
-    name: 'Modern Elegance',
-    location: 'Lonavala, Pune',
-    category: 'Residential',
-    serviceHref: '/services/residential',
-    desc: 'Double-height living volumes filled with natural light, statement chandelier and bespoke teal upholstery set against cream walls.',
-    img: imgNeelaya,
-  },
-  {
-    id: 'sparsh-living',
-    name: 'Bungalow Ramakunj',
-    location: 'Baner, Pune',
-    category: 'Residential',
-    serviceHref: '/services/residential',
-    desc: 'A playful yet refined modular kitchen in blush rose gloss, framed by an arched passage into a warmly lit living space.',
-    img: imgSparsh,
-  },
-  {
-    id: 'modern-industrial-office',
-    name: 'The Office Neutral Edit',
-    location: 'Lower Parel, Mumbai',
-    category: 'Commercial',
-    serviceHref: '/services/commercial',
-    desc: 'A skyline terrace redesigned as an intimate outdoor retreat — stone floors, teak ceilings and lush greenery under city skies.',
-    img: imgOffice,
-  },
-  {
-    id: 'aurelia-penthouse',
-    name: 'The Quiet Curve',
-    location: 'Worli, Mumbai',
-    category: 'Residential',
-    serviceHref: '/services/residential',
-    desc: 'Elegant classic-contemporary living with a curved sectional, marble coffee table and layered drapery drawing in abundant daylight.',
-    img: imgAurelia,
-  },
-  {
-    id: 'urban-serenity',
-    name: 'The Soft Neutral Story',
-    location: 'Koregaon Park, Pune',
-    category: 'Residential',
-    serviceHref: '/services/residential',
-    desc: 'Arched niches in warm ivory, backlit fluted panels and a floating walnut console make this media wall a quiet centrepiece.',
-    img: imgUrban,
-  },
-]
 
 const transformations = [
   {
@@ -1985,8 +1924,16 @@ function TestimonialsCarousel() {
   )
 }
 
+const DEFAULT_SERVICE_CARDS = [
+  { img: '/living-room-design.jpg', title: 'Living Room Design', desc: 'Sophisticated and welcoming living spaces designed for comfort, conversation, and everyday luxury.' },
+  { img: '/modular-kitchen.jpg', title: 'Modular Kitchen', desc: 'Smart, elegant kitchens with seamless storage solutions, premium finishes, and functional layouts.' },
+  { img: '/bedroom-interiors.jpg', title: 'Bedroom Interiors', desc: 'Calm and luxurious retreats crafted with warm textures, custom furniture, and ambient lighting.' },
+  { img: '/dining-entertainment.jpg', title: 'Dining & Entertainment', desc: 'Stylish dining areas and entertainment spaces designed to bring family and guests together.' },
+]
+
 export default function Home({ splashDone }: { splashDone: boolean }) {
-  const featured = projects.slice(0, 6)
+  const { settings } = useSiteSettings()
+  const serviceCards = settings?.serviceCards?.length ? settings.serviceCards : DEFAULT_SERVICE_CARDS
   const location = useLocation()
   const [animKey, setAnimKey] = useState(0)
   const philosophySectionRef = useRef<HTMLElement>(null)
@@ -2732,28 +2679,7 @@ export default function Home({ splashDone }: { splashDone: boolean }) {
 
         {/* 4-card grid */}
         <div className="oe-grid">
-          {[
-            {
-              img: '/living-room-design.jpg',
-              title: 'Living Room Design',
-              desc: 'Sophisticated and welcoming living spaces designed for comfort, conversation, and everyday luxury.',
-            },
-            {
-              img: '/modular-kitchen.jpg',
-              title: 'Modular Kitchen',
-              desc: 'Smart, elegant kitchens with seamless storage solutions, premium finishes, and functional layouts.',
-            },
-            {
-              img: '/bedroom-interiors.jpg',
-              title: 'Bedroom Interiors',
-              desc: 'Calm and luxurious retreats crafted with warm textures, custom furniture, and ambient lighting.',
-            },
-            {
-              img: '/dining-entertainment.jpg',
-              title: 'Dining & Entertainment',
-              desc: 'Stylish dining areas and entertainment spaces designed to bring family and guests together.',
-            },
-          ].map((card, i) => (
+          {serviceCards.map((card, i) => (
             <motion.div
               key={card.title}
               className="oe-card"

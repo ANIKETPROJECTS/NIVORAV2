@@ -26,6 +26,29 @@ export interface Project {
   images: string[]
 }
 
+export interface ServiceCard {
+  img: string
+  title: string
+  desc: string
+}
+
+export interface HomePortfolioItem {
+  id: string
+  name: string
+  location: string
+  category: string
+  serviceHref: string
+  desc: string
+  img: string
+}
+
+export interface SiteSettings {
+  logoUrl: string
+  footerLogoUrl: string
+  serviceCards: ServiceCard[]
+  homePortfolio: HomePortfolioItem[]
+}
+
 const BASE = '/api'
 
 // ── Admin session token (stored after login) ──────────────────────────────────
@@ -104,7 +127,7 @@ export function deleteProject(id: string): Promise<{ message: string }> {
 }
 
 /**
- * Upload one or more image files to Cloudinary via the backend.
+ * Upload one or more image files to Cloudinary via the backend (projects folder).
  * Returns an array of secure Cloudinary URLs.
  */
 export async function uploadImages(files: File[]): Promise<string[]> {
@@ -122,4 +145,34 @@ export async function uploadImages(files: File[]): Promise<string[]> {
   }
   const data = await res.json()
   return data.urls as string[]
+}
+
+/**
+ * Upload a single image to the site/branding folder in Cloudinary.
+ * Returns the secure URL.
+ */
+export async function uploadSiteImage(file: File): Promise<string> {
+  const token = getAdminToken() || ''
+  const form = new FormData()
+  form.append('image', file)
+  const res = await fetch(`${BASE}/site-settings/upload-image`, {
+    method: 'POST',
+    headers: { 'x-admin-token': token },
+    body: form,
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || 'Upload failed')
+  }
+  const data = await res.json()
+  return data.url as string
+}
+
+// ── Site Settings ─────────────────────────────────────────────────────────────
+export function fetchSiteSettings(): Promise<SiteSettings> {
+  return request('/site-settings')
+}
+
+export function updateSiteSettings(data: Partial<SiteSettings>): Promise<SiteSettings> {
+  return adminRequest('/site-settings', { method: 'PUT', body: JSON.stringify(data) })
 }

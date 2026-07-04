@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
-import nivoraLogo from '../assets/images/nivora-logo.png'
+import { useSiteSettings } from '../hooks/useSiteSettings'
+
+const FALLBACK_LOGO = '/nivora-logo.png'
 
 const links = [
   { to: '/', label: 'Home' },
@@ -22,6 +24,9 @@ export default function Navbar() {
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
+  const { settings } = useSiteSettings()
+
+  const logoSrc = settings?.logoUrl || FALLBACK_LOGO
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60)
@@ -61,7 +66,7 @@ export default function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between h-20">
 
-          {/* Logo — image */}
+          {/* Logo */}
           <a
             href="/"
             className="navbar-logo"
@@ -69,7 +74,7 @@ export default function Navbar() {
             style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', cursor: 'pointer' }}
           >
             <img
-              src={nivoraLogo}
+              src={logoSrc}
               alt="Nivora Interiors"
               style={{ height: '38px', width: 'auto', objectFit: 'contain' }}
             />
@@ -107,7 +112,7 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Enquire Now — premium gold gradient */}
+          {/* Enquire Now */}
           <Link
             to="/quote"
             className="hidden lg:inline-flex items-center gap-2 text-xs tracking-[0.2em] uppercase px-6 py-3 transition-all duration-300"

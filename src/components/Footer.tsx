@@ -2,11 +2,15 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Instagram, MapPin, Mail, Phone } from 'lucide-react'
 import { motion, useInView } from 'framer-motion'
+import { useSiteSettings } from '../hooks/useSiteSettings'
+
+const FALLBACK_FOOTER_LOGO = '/nivora-footer-logo.png'
 
 function useTransparentLogo(src: string) {
   const [logoSrc, setLogoSrc] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!src) return
     const img = new Image()
     img.crossOrigin = 'anonymous'
     img.onload = () => {
@@ -26,6 +30,7 @@ function useTransparentLogo(src: string) {
       ctx.putImageData(imageData, 0, 0)
       setLogoSrc(canvas.toDataURL('image/png'))
     }
+    img.onerror = () => setLogoSrc(src) // fallback: show as-is
     img.src = src
   }, [src])
 
@@ -100,7 +105,9 @@ function FooterLink({ to, label }: { to: string; label: string }) {
 }
 
 export default function Footer() {
-  const logoSrc = useTransparentLogo('/nivora-footer-logo.png')
+  const { settings } = useSiteSettings()
+  const rawLogoSrc = settings?.footerLogoUrl || FALLBACK_FOOTER_LOGO
+  const logoSrc = useTransparentLogo(rawLogoSrc)
   const ref = useRef<HTMLElement>(null)
   const isInView = useInView(ref, { once: true, amount: 0.1 })
 
@@ -200,7 +207,7 @@ export default function Footer() {
               alignItems: 'flex-start',
             }}
           >
-            {/* Logo with brightness glow on hover */}
+            {/* Logo */}
             <a
               href="/"
               style={{
@@ -389,7 +396,7 @@ export default function Footer() {
                 </a>
               </div>
 
-              {/* Instagram — rotate + scale on hover */}
+              {/* Instagram */}
               <a
                 href="https://instagram.com/NivoraInteriors"
                 target="_blank"
@@ -420,7 +427,7 @@ export default function Footer() {
 
         </div>
 
-        {/* Gold divider — draws left-to-right on scroll */}
+        {/* Gold divider */}
         <motion.div
           initial={{ scaleX: 0 }}
           animate={isInView ? { scaleX: 1 } : { scaleX: 0 }}

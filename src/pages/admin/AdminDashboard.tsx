@@ -5,12 +5,15 @@ import {
   deleteProject, fetchProject, clearAdminToken, Project
 } from '../../lib/api'
 import AdminProjectForm from './AdminProjectForm'
-import { Plus, Pencil, Trash2, LogOut, RefreshCw, ExternalLink, Loader2 } from 'lucide-react'
+import AdminSiteSettings from './AdminSiteSettings'
+import { Plus, Pencil, Trash2, LogOut, RefreshCw, ExternalLink, Loader2, Settings } from 'lucide-react'
 
 type ProjectSummary = Pick<Project, 'id' | 'name' | 'location' | 'category' | 'year' | 'badge' | 'concept' | 'coverImage'>
+type AdminTab = 'projects' | 'site-settings'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
+  const [tab, setTab] = useState<AdminTab>('projects')
   const [projects, setProjects] = useState<ProjectSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -92,7 +95,19 @@ export default function AdminDashboard() {
           <span className="adm-brand-sub">admin</span>
         </div>
         <nav className="adm-nav">
-          <div className="adm-nav-item adm-nav-active">Projects</div>
+          <div
+            className={`adm-nav-item ${tab === 'projects' ? 'adm-nav-active' : ''}`}
+            onClick={() => setTab('projects')}
+          >
+            Projects
+          </div>
+          <div
+            className={`adm-nav-item ${tab === 'site-settings' ? 'adm-nav-active' : ''}`}
+            onClick={() => setTab('site-settings')}
+            style={{ display: 'flex', alignItems: 'center', gap: 7 }}
+          >
+            <Settings size={13} /> Site Settings
+          </div>
         </nav>
         <div className="adm-sidebar-footer">
           <button className="adm-logout" onClick={handleLogout}>
@@ -106,29 +121,45 @@ export default function AdminDashboard() {
         {/* Topbar */}
         <header className="adm-topbar">
           <div className="adm-topbar-left">
-            <h1 className="adm-page-title">Portfolio Projects</h1>
-            <span className="adm-count">{projects.length} {projects.length === 1 ? 'project' : 'projects'}</span>
+            {tab === 'projects' ? (
+              <>
+                <h1 className="adm-page-title">Portfolio Projects</h1>
+                <span className="adm-count">{projects.length} {projects.length === 1 ? 'project' : 'projects'}</span>
+              </>
+            ) : (
+              <h1 className="adm-page-title">Site Settings</h1>
+            )}
           </div>
           <div className="adm-topbar-right">
-            <button className="adm-btn-ghost-sm" onClick={load} title="Refresh">
-              <RefreshCw size={15} />
-            </button>
-            <a href="/portfolio" target="_blank" rel="noreferrer" className="adm-btn-ghost-sm" title="View site">
-              <ExternalLink size={15} />
-            </a>
-            <button className="adm-btn-add" onClick={() => setShowForm(true)}>
-              <Plus size={16} /> Add Project
-            </button>
+            {tab === 'projects' ? (
+              <>
+                <button className="adm-btn-ghost-sm" onClick={load} title="Refresh">
+                  <RefreshCw size={15} />
+                </button>
+                <a href="/portfolio" target="_blank" rel="noreferrer" className="adm-btn-ghost-sm" title="View site">
+                  <ExternalLink size={15} />
+                </a>
+                <button className="adm-btn-add" onClick={() => setShowForm(true)}>
+                  <Plus size={16} /> Add Project
+                </button>
+              </>
+            ) : (
+              <a href="/" target="_blank" rel="noreferrer" className="adm-btn-ghost-sm" title="View site">
+                <ExternalLink size={15} />
+              </a>
+            )}
           </div>
         </header>
 
-        {/* Messages */}
-        {successMsg && <div className="adm-success">{successMsg}</div>}
-        {error && <div className="adm-error">{error} <button onClick={() => setError('')}>×</button></div>}
+        {/* Messages (projects tab only) */}
+        {tab === 'projects' && successMsg && <div className="adm-success">{successMsg}</div>}
+        {tab === 'projects' && error && <div className="adm-error">{error} <button onClick={() => setError('')}>×</button></div>}
 
         {/* Content */}
         <div className="adm-content">
-          {loading ? (
+          {tab === 'site-settings' ? (
+            <AdminSiteSettings />
+          ) : loading ? (
             <div className="adm-loading"><Loader2 size={28} className="adm-spin" /> Loading projects…</div>
           ) : projects.length === 0 ? (
             <div className="adm-empty">
