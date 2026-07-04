@@ -387,7 +387,8 @@ export default function AdminSiteSettings({ section }: Props) {
     setSuccess('')
     try {
       const updated = await updateSiteSettings(settings)
-      const merged = { ...EMPTY_SETTINGS, ...updated }
+      // Merge order: defaults → current UI (keeps any fields the server omits) → server response
+      const merged = { ...EMPTY_SETTINGS, ...settings, ...updated }
       invalidateSiteSettings(merged)
       setSettings(merged)
       setSuccess('Changes saved successfully.')
