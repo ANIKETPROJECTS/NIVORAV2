@@ -37,7 +37,7 @@ function requireAdmin(req, res, next) {
     if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') return next()
     return res.status(403).json({ error: 'Admin access required. Set ADMIN_TOKEN env variable.' })
   }
-  const provided = req.headers['x-admin-token'] || req.query.adminToken
+  const provided = req.headers['x-admin-token']
   if (provided !== adminToken) {
     return res.status(403).json({ error: 'Forbidden: invalid admin token' })
   }
