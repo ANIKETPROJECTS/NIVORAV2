@@ -1138,11 +1138,15 @@ function TransformationCarousel() {
 
 
 function HeroSection({ splashDone }: { splashDone: boolean }) {
+  const { settings: heroSettings } = useSiteSettings()
   const sectionRef = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end start'] })
   const rawY = useTransform(scrollYProgress, [0, 1], ['0%', '22%'])
   const parallaxY = useSpring(rawY, { stiffness: 60, damping: 20 })
   const [activeCity, setActiveCity] = useState<'Mumbai' | 'Pune'>('Mumbai')
+
+  const heroBg = heroSettings?.homeHero?.backgroundImage || heroImg
+  const heroSubheadline = heroSettings?.homeHero?.subheadline || 'We design homes and workspaces that are beautiful, functional, and built for everyday living.'
 
   const heroContainerVariants = {
     hidden: {},
@@ -1172,7 +1176,7 @@ function HeroSection({ splashDone }: { splashDone: boolean }) {
         style={{ y: parallaxY, position: 'absolute', inset: '-12% 0', zIndex: 0 }}
       >
         <img
-          src={heroImg}
+          src={heroBg}
           alt="NIVORA Interiors"
           style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', display: 'block' }}
           loading="eager"
@@ -1330,7 +1334,7 @@ function HeroSection({ splashDone }: { splashDone: boolean }) {
             margin: '0 auto 48px',
           }}
         >
-          We design homes and workspaces that are beautiful, functional, and built for everyday living.
+          {heroSubheadline}
         </motion.p>
 
         {/* 6. CTA buttons */}

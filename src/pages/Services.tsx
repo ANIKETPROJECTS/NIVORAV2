@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import FadeIn from '../components/FadeIn'
 import ProcessSection from '../components/ProcessSection'
+import { useSiteSettings } from '../hooks/useSiteSettings'
 
-const serviceCards = [
+const FALLBACK_SERVICE_CARDS = [
   {
     num: '01',
     title: 'Residential Interiors',
@@ -203,10 +204,24 @@ function ServiceCard({ card, index, onCardClick }: { card: typeof serviceCards[0
 
 export default function Services() {
   const ctaRef = useRef<HTMLElement>(null)
+  const { settings } = useSiteSettings()
 
   const scrollToCta = () => {
     ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
+
+  // Merge DB service list with auto-generated num field; fall back to hardcoded
+  const serviceCards = settings?.servicesList?.length
+    ? settings.servicesList.map((s, i) => ({
+        num: String(i + 1).padStart(2, '0'),
+        title: s.title,
+        desc: s.desc,
+        img: s.img,
+      }))
+    : FALLBACK_SERVICE_CARDS
+
+  const pageHeadline   = settings?.servicePageHero?.headline    || 'Our Services'
+  const pageSubheading = settings?.servicePageHero?.subheadline || 'Complete interior design and architecture services — from first conversation to final reveal.'
 
   return (
     <div style={{ backgroundColor: '#F7F4EF', minHeight: '100vh' }}>
@@ -303,7 +318,7 @@ export default function Services() {
             lineHeight: 1.06,
             marginBottom: '1rem',
             letterSpacing: '-0.01em',
-          }}>Our Services</h1>
+          }}>{pageHeadline}</h1>
           <p style={{
             fontFamily: "'Inter', sans-serif",
             fontWeight: 300,
@@ -311,8 +326,7 @@ export default function Services() {
             color: 'rgba(28,40,24,0.48)',
             lineHeight: 1.85,
           }}>
-            Complete interior design and architecture services —<br />
-            from first conversation to final reveal.
+            {pageSubheading}
           </p>
         </FadeIn>
       </section>
