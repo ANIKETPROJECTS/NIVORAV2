@@ -28,6 +28,21 @@ export interface Project {
 
 const BASE = '/api'
 
+// ── Admin session token (stored after login) ──────────────────────────────────
+const ADMIN_TOKEN_KEY = 'nivora_admin_token'
+
+export function getAdminToken(): string | null {
+  return sessionStorage.getItem(ADMIN_TOKEN_KEY)
+}
+export function setAdminToken(token: string) {
+  sessionStorage.setItem(ADMIN_TOKEN_KEY, token)
+  sessionStorage.setItem('nivora_admin', 'true')
+}
+export function clearAdminToken() {
+  sessionStorage.removeItem(ADMIN_TOKEN_KEY)
+  sessionStorage.removeItem('nivora_admin')
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
@@ -38,6 +53,31 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     throw new Error(body.error || `Request failed: ${res.status}`)
   }
   return res.json()
+}
+
+function adminRequest<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = getAdminToken() || ''
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'x-admin-token': token,
+    ...(options?.headers as Record<string, string> | undefined),
+  }
+  return request<T>(path, { ...options, headers })
+}
+
+// ── Admin login ───────────────────────────────────────────────────────────────
+export async function adminLogin(username: string, password: string): Promise<void> {
+  const res = await fetch(`${BASE}/admin/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || 'Login failed')
+  }
+  const data = await res.json()
+  setAdminToken(data.token)
 }
 
 // ── Portfolio grid ────────────────────────────────────────────────────────────
@@ -52,15 +92,15 @@ export function fetchProject(id: string): Promise<Project> {
 
 // ── Admin helpers ─────────────────────────────────────────────────────────────
 export function createProject(data: Partial<Project>): Promise<Project> {
-  return request('/projects', { method: 'POST', body: JSON.stringify(data) })
+  return adminRequest('/projects', { method: 'POST', body: JSON.stringify(data) })
 }
 
 export function updateProject(id: string, data: Partial<Project>): Promise<Project> {
-  return request(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+  return adminRequest(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) })
 }
 
 export function deleteProject(id: string): Promise<{ message: string }> {
-  return request(`/projects/${id}`, { method: 'DELETE' })
+  return adminRequest(`/projects/${id}`, { method: 'DELETE' })
 }
 
 /**
@@ -68,9 +108,14 @@ export function deleteProject(id: string): Promise<{ message: string }> {
  * Returns an array of secure Cloudinary URLs.
  */
 export async function uploadImages(files: File[]): Promise<string[]> {
+  const token = getAdminToken() || ''
   const form = new FormData()
   files.forEach(f => form.append('images', f))
-  const res = await fetch(`${BASE}/projects/upload-images`, { method: 'POST', body: form })
+  const res = await fetch(`${BASE}/projects/upload-images`, {
+    method: 'POST',
+    headers: { 'x-admin-token': token },
+    body: form,
+  })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.error || 'Upload failed')

@@ -15,6 +15,9 @@ import Contact from './pages/Contact'
 import Quote from './pages/Quote'
 import ThankYou from './pages/ThankYou'
 import ProjectDetail from './pages/ProjectDetail'
+import AdminLogin from './pages/admin/AdminLogin'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import ProtectedAdminRoute from './pages/admin/ProtectedAdminRoute'
 
 // Computed once at module load: was this a fresh page load or reload?
 // "navigate" = fresh load (URL bar / bookmark / new tab)
@@ -118,7 +121,20 @@ function AppInner() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppInner />
+      <Routes>
+        {/* ── Admin routes (no Navbar/Footer/splash) ── */}
+        <Route path="/adminpannel" element={<AdminLogin />} />
+        <Route
+          path="/adminpannel/dashboard"
+          element={
+            <ProtectedAdminRoute>
+              <AdminDashboard />
+            </ProtectedAdminRoute>
+          }
+        />
+        {/* ── Public site ── */}
+        <Route path="/*" element={<AppInner />} />
+      </Routes>
     </BrowserRouter>
   )
 }

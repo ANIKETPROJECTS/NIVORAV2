@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { v2 as cloudinary } from 'cloudinary'
 import multer from 'multer'
 import { Project } from '../models/Project.js'
+import { validateToken } from '../adminAuth.js'
 
 const router = Router()
 
@@ -28,18 +29,11 @@ function uploadToCloudinary(buffer, folder = 'nivora/projects') {
   })
 }
 
-// ── Simple admin token guard for mutating endpoints ───────────────────────────
+// ── Admin guard — validates the session token issued by /api/admin/login ──────
 function requireAdmin(req, res, next) {
-  const adminToken = process.env.ADMIN_TOKEN
-  // If no ADMIN_TOKEN is set, only allow from localhost
-  if (!adminToken) {
-    const ip = req.ip || req.connection?.remoteAddress || ''
-    if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') return next()
-    return res.status(403).json({ error: 'Admin access required. Set ADMIN_TOKEN env variable.' })
-  }
   const provided = req.headers['x-admin-token']
-  if (provided !== adminToken) {
-    return res.status(403).json({ error: 'Forbidden: invalid admin token' })
+  if (!validateToken(provided)) {
+    return res.status(403).json({ error: 'Forbidden: invalid or missing admin token.' })
   }
   next()
 }

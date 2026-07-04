@@ -4,6 +4,7 @@ import cors from 'cors'
 import { v2 as cloudinary } from 'cloudinary'
 import { connectDB } from './db.js'
 import projectRoutes from './routes/projects.js'
+import adminLoginRoute from './routes/adminLogin.js'
 
 const app = express()
 const PORT = process.env.API_PORT || 3001
@@ -21,6 +22,7 @@ app.use(cors())
 app.use(express.json({ limit: '10mb' }))
 
 // ── Routes ────────────────────────────────────────────────────────────────────
+app.use('/api/admin', adminLoginRoute)
 app.use('/api/projects', projectRoutes)
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }))
