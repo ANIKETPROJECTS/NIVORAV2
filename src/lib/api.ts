@@ -167,6 +167,15 @@ export function deleteProject(id: string): Promise<{ message: string }> {
  * Upload one or more image files to Cloudinary via the backend (projects folder).
  * Returns an array of secure Cloudinary URLs.
  */
+/** Shared 403 handler for multipart upload fetches (can't go through adminRequest). */
+function handleUploadResponse(res: Response) {
+  if (res.status === 403) {
+    clearAdminToken()
+    window.location.href = '/adminpannel'
+    throw new Error('Session expired. Please log in again.')
+  }
+}
+
 export async function uploadImages(files: File[]): Promise<string[]> {
   const token = getAdminToken() || ''
   const form = new FormData()
@@ -176,6 +185,7 @@ export async function uploadImages(files: File[]): Promise<string[]> {
     headers: { 'x-admin-token': token },
     body: form,
   })
+  handleUploadResponse(res)
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.error || 'Upload failed')
@@ -197,6 +207,7 @@ export async function uploadSiteImage(file: File): Promise<string> {
     headers: { 'x-admin-token': token },
     body: form,
   })
+  handleUploadResponse(res)
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.error || 'Upload failed')
