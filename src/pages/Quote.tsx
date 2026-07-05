@@ -24,8 +24,8 @@ export default function Quote() {
     <div className="bg-[#3b4a35] pt-20 min-h-screen">
       {/* Header */}
       <section className="relative py-28 px-6 overflow-hidden">
-        <div className="absolute inset-0 opacity-8">
-          <div className="w-full h-full" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #b8966a 0%, transparent 60%)' }} />
+        <div className="absolute inset-0 opacity-[0.12]">
+          <div className="w-full h-full" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, #b8966a 0%, transparent 45%)' }} />
         </div>
         <div className="max-w-3xl mx-auto text-center relative">
           <FadeIn>

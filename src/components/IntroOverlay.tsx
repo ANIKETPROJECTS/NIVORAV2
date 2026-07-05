@@ -43,8 +43,8 @@ export default function IntroOverlay({ onExitComplete }: { onExitComplete?: () =
     <>
       <style>{`
         @keyframes glowBreathe {
-          0%, 100% { transform: scale(0.85); opacity: 0.6; }
-          50%       { transform: scale(1.15); opacity: 1; }
+          0%, 100% { transform: scale(0.85); opacity: 0.35; }
+          50%       { transform: scale(1.1);  opacity: 0.55; }
         }
       `}</style>
 
@@ -88,8 +88,8 @@ export default function IntroOverlay({ onExitComplete }: { onExitComplete?: () =
                       position: 'absolute',
                       inset: '-70% -50%',
                       background:
-                        'radial-gradient(ellipse at center, rgba(201,166,107,0.55) 0%, rgba(201,166,107,0.18) 45%, transparent 72%)',
-                      filter: 'blur(32px)',
+                        'radial-gradient(ellipse at center, rgba(201,166,107,0.28) 0%, rgba(201,166,107,0.08) 50%, transparent 72%)',
+                      filter: 'blur(24px)',
                       pointerEvents: 'none',
                       animation: 'glowBreathe 2.2s ease-in-out infinite',
                     }}
